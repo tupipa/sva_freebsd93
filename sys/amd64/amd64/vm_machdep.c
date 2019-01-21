@@ -83,6 +83,10 @@ __FBSDID("$FreeBSD: releng/9.3/sys/amd64/amd64/vm_machdep.c 264148 2014-04-05 14
 
 #include <x86/isa/isa.h>
 
+#if 1
+#include <sva/interrupt.h>
+#endif
+
 static void	cpu_reset_real(void);
 #ifdef SMP
 static void	cpu_reset_proxy(void);
@@ -90,6 +94,7 @@ static u_int	cpu_reset_proxyid;
 static volatile u_int	cpu_reset_proxy_active;
 #endif
 
+// <<<<<<< HEAD
 CTASSERT((struct thread **)OFFSETOF_CURTHREAD ==
     &((struct pcpu *)NULL)->pc_curthread);
 CTASSERT((struct pcb **)OFFSETOF_CURPCB == &((struct pcpu *)NULL)->pc_curpcb);
@@ -138,6 +143,23 @@ alloc_fpusave(int flags)
 	}
 	return (res);
 }
+// =======
+#if 1
+void
+kernel_thread_trampoline (struct thread * td)
+{
+  extern void fork_exit(void (*callout)(void *, struct trapframe *),
+                        void *arg,
+                        struct trapframe *frame);
+
+  /*
+   * Call the specified function.
+   */
+  fork_exit (td->callout, td->callarg, 0);
+  return;
+}
+#endif
+// >>>>>>> tls_v2
 
 /*
  * Finish a fork operation, with process p2 nearly set up.
@@ -266,6 +288,33 @@ cpu_fork(td1, p2, td2, flags)
 		mdp2->md_ldt = NULL;
 	mtx_unlock(&dt_lock);
 
+#if 1
+	/*
+	 * Compute the length of the stack.
+	 */
+	uintptr_t stacklen = td2->td_kstack_pages * PAGE_SIZE -
+	                     sizeof (struct pcb) -
+	                     sizeof (struct trapframe);
+
+  /*
+   * SVA: Initialize the new thread state.
+   */
+  td2->sva = 1;
+  td2->callout = fork_return;
+  td2->callarg = td2;
+  td2->svaID = sva_init_stack (td2->td_kstack,
+	                             stacklen,
+	                             kernel_thread_trampoline,
+	                             td2,
+	                             0,
+                               0);
+
+  /* Update fsbase in SVA -- TLS support */
+  if (pcb2->pcb_fsbase != 0){
+	sva_init_fsbase(td2->svaID, pcb2->pcb_fsbase);
+  }
+
+#endif
 	/*
 	 * Now, cpu_switch() can schedule the new process.
 	 * pcb_rsp is loaded pointing to the cpu_switch() stack frame
@@ -295,6 +344,10 @@ cpu_set_fork_handler(td, func, arg)
 	 */
 	td->td_pcb->pcb_r12 = (long) func;	/* function */
 	td->td_pcb->pcb_rbx = (long) arg;	/* first arg */
+#if 1
+  td->callout = func;
+  td->callarg = arg;
+#endif
 }
 
 void
@@ -309,6 +362,13 @@ cpu_exit(struct thread *td)
 		user_ldt_free(td);
 	else
 		mtx_unlock(&dt_lock);
+#if 1
+  /* SVA:
+   *  Destroy the integer state to release resources and mark that the thread
+   *  can never be put on to the processor again.
+   */
+  sva_release_stack (td->svaID);
+#endif
 }
 
 void
@@ -383,12 +443,15 @@ cpu_thread_free(struct thread *td)
 void
 cpu_set_syscall_retval(struct thread *td, int error)
 {
-
 	switch (error) {
 	case 0:
+#if 0
 		td->td_frame->tf_rax = td->td_retval[0];
 		td->td_frame->tf_rdx = td->td_retval[1];
 		td->td_frame->tf_rflags &= ~PSL_C;
+#else
+    sva_icontext_setretval (td->td_retval[1], td->td_retval[0], 0);
+#endif
 		break;
 
 	case ERESTART:
@@ -404,9 +467,18 @@ cpu_set_syscall_retval(struct thread *td, int error)
 		 * Require full context restore to get the arguments
 		 * in the registers reloaded at return to usermode.
 		 */
+#if 0
 		td->td_frame->tf_rip -= td->td_frame->tf_err;
 		td->td_frame->tf_r10 = td->td_frame->tf_rcx;
+// <<<<<<< HEAD
 		set_pcb_flags(td->td_pcb, PCB_FULL_IRET);
+// =======
+    sva_icontext_restart(td->td_frame->tf_r10, td->td_frame->tf_rip);
+#else
+	set_pcb_flags(td->td_pcb, PCB_FULL_IRET); // added for 9.3 kernel
+    sva_icontext_restart(0, 0);
+#endif
+// >>>>>>> tls_v2
 		break;
 
 	case EJUSTRETURN:
@@ -419,8 +491,12 @@ cpu_set_syscall_retval(struct thread *td, int error)
 			else
 				error = td->td_proc->p_sysent->sv_errtbl[error];
 		}
+#if 0
 		td->td_frame->tf_rax = error;
 		td->td_frame->tf_rflags |= PSL_C;
+#else
+    sva_icontext_setretval (0, error, 1);
+#endif
 		break;
 	}
 }
@@ -487,7 +563,120 @@ cpu_set_upcall(struct thread *td, struct thread *td0)
 	/* Setup to release spin count in fork_exit(). */
 	td->td_md.md_spinlock_count = 1;
 	td->td_md.md_saved_flags = PSL_KERNEL | PSL_I;
+#if 1
+  /*
+   * SVA: Initialize the new thread state.
+   */
+  uintptr_t stacklen = td->td_kstack_pages * PAGE_SIZE -
+	                     sizeof (struct pcb) -
+	                     sizeof (struct trapframe);
+  td->sva = 1;
+  td->callout = fork_return;
+  td->callarg = td;
+  td->svaID = sva_init_stack (td->td_kstack,
+	                            stacklen,
+	                            kernel_thread_trampoline,
+                              td,
+                              0,
+	                            0);
+
+  /* Update fsbase in SVA -- TLS support */
+  if (pcb2->pcb_fsbase != 0){
+	sva_init_fsbase(td->svaID, pcb2->pcb_fsbase);
+  }
+
+#endif
 }
+
+#if 1
+/*
+ * Initialize machine state (pcb and trap frame) for a new thread about to
+ * upcall. Put enough state in the new thread's PCB to get it to go back 
+ * userret(), where we can intercept it again to set the return (upcall)
+ * Address and stack, along with those from upcals that are from other sources
+ * such as those generated in thread_userret() itself.
+ */
+void
+cpu_create_upcall(struct thread *td,
+                  struct thread *td0,
+                  void (*func)(void *),
+                  void *arg)
+{
+	struct pcb *pcb2;
+
+	/* Point the pcb to the top of the stack. */
+	pcb2 = td->td_pcb;
+
+	/*
+	 * Copy the upcall pcb.  This loads kernel regs.
+	 * Those not loaded individually below get their default
+	 * values here.
+	 */
+	bcopy(td0->td_pcb, pcb2, sizeof(*pcb2));
+	clear_pcb_flags(pcb2, PCB_FPUINITDONE | PCB_USERFPUINITDONE);
+	pcb2->pcb_save = &pcb2->pcb_user_save;
+	set_pcb_flags(pcb2, PCB_FULL_IRET);
+
+	/*
+	 * Create a new fresh stack for the new thread.
+	 */
+	bcopy(td0->td_frame, td->td_frame, sizeof(struct trapframe));
+
+	/* If the current thread has the trap bit set (i.e. a debugger had
+	 * single stepped the process to the system call), we need to clear
+	 * the trap flag from the new frame. Otherwise, the new thread will
+	 * receive a (likely unexpected) SIGTRAP when it executes the first
+	 * instruction after returning to userland.
+	 */
+	td->td_frame->tf_rflags &= ~PSL_T;
+
+	/*
+	 * Set registers for trampoline to user mode.  Leave space for the
+	 * return address on stack.  These are the kernel mode register values.
+	 */
+	pcb2->pcb_r12 = (register_t)fork_return;	    /* trampoline arg */
+	pcb2->pcb_rbp = 0;
+	pcb2->pcb_rsp = (register_t)td->td_frame - sizeof(void *);	/* trampoline arg */
+	pcb2->pcb_rbx = (register_t)td;			    /* trampoline arg */
+	pcb2->pcb_rip = (register_t)fork_trampoline;
+	/*
+	 * If we didn't copy the pcb, we'd need to do the following registers:
+	 * pcb2->pcb_cr3:	cloned above.
+	 * pcb2->pcb_dr*:	cloned above.
+	 * pcb2->pcb_savefpu:	cloned above.
+	 * pcb2->pcb_onfault:	cloned above (always NULL here?).
+	 * pcb2->pcb_[fg]sbase: cloned above
+	 */
+
+	/* Setup to release spin count in fork_exit(). */
+	td->td_md.md_spinlock_count = 1;
+	td->td_md.md_saved_flags = PSL_KERNEL | PSL_I;
+#if 1
+  /*
+   * SVA: Initialize the new thread state.
+   */
+  uintptr_t stacklen = td->td_kstack_pages * PAGE_SIZE -
+	                     sizeof (struct pcb) -
+	                     sizeof (struct trapframe);
+  td->sva = 1;
+  td->callout = func;
+  td->callarg = arg;
+  td->svaID = sva_init_stack (td->td_kstack,
+	                            stacklen,
+	                            kernel_thread_trampoline,
+                              td,
+                              0,
+	                            0);
+
+  /* Update fsbase in SVA -- TLS support */
+  if (pcb2->pcb_fsbase != 0){
+	sva_init_fsbase(td->svaID, pcb2->pcb_fsbase);
+  }
+
+#endif
+}
+#endif
+
 
 /*
  * Set that machine state for performing an upcall that has to
@@ -569,6 +758,18 @@ cpu_set_user_tls(struct thread *td, void *tls_base)
 	}
 #endif
 	pcb->pcb_fsbase = (register_t)tls_base;
+// <<<<<<< HEAD
+// =======
+// 	set_pcb_flags(pcb, PCB_FULL_IRET);
+
+	if (td->svaID){
+		sva_init_fsbase(td->svaID, tls_base); // never reached here yet.
+	}else{
+		panic("%s[%d:%d] has no svaID, cannot init fsbase for thread\n", 
+			td->td_proc->p_comm, td->td_proc->p_pid, td->td_tid);
+	}
+
+// >>>>>>> tls_v2
 	return (0);
 }
 

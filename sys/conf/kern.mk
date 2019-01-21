@@ -107,6 +107,8 @@ INLINE_LIMIT?=	15000
 .if ${MACHINE_CPUARCH} == "amd64"
 .if ${COMPILER_TYPE} == "clang"
 CFLAGS+=	-mno-aes -mno-avx
+# For clang and SVA, turn on CFI and SFI
+CFLAGS+=	-mllvm -add-sfi -mllvm -enable-sfi-loadchecks -Xclang -backend-option -Xclang -x86-add-cfi
 .endif
 CFLAGS+=	-mcmodel=kernel -mno-red-zone -mno-mmx -mno-sse -msoft-float \
 		-fno-asynchronous-unwind-tables
@@ -147,7 +149,20 @@ CFLAGS+=	-ffreestanding
 #
 # GCC SSP support
 #
-.if ${MK_SSP} != "no" && ${MACHINE_CPUARCH} != "ia64" && \
-    ${MACHINE_CPUARCH} != "arm" && ${MACHINE_CPUARCH} != "mips"
-CFLAGS+=	-fstack-protector
-.endif
+# <<<<<<< HEAD
+# .if ${MK_SSP} != "no" && ${MACHINE_CPUARCH} != "ia64" && \
+#     ${MACHINE_CPUARCH} != "arm" && ${MACHINE_CPUARCH} != "mips"
+# CFLAGS+=	-fstack-protector
+# =======
+# #.if ${MK_SSP} != "no" && ${MACHINE_CPUARCH} != "ia64" && \
+# #    ${MACHINE_CPUARCH} != "arm" && ${MACHINE_CPUARCH} != "mips"
+# #CFLAGS+=	-fstack-protector
+# #.endif
+
+# #
+# # Enable CTF conversation on request
+# #
+# .if defined(WITH_CTF)
+# .undef NO_CTF
+# >>>>>>> tls_v2
+# .endif

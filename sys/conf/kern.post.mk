@@ -121,13 +121,19 @@ gdbinit:
 .endif
 .endif
 
-${FULLKERNEL}: ${SYSTEM_DEP} vers.o
+${FULLKERNEL}: ${SYSTEM_DEP} vers.o $S/../../../SVA/lib/libsva.a
 	@rm -f ${.TARGET}
-	@echo linking ${.TARGET}
-	${SYSTEM_LD}
+# <<<<<<< ours
+	@echo linking SVA ${.TARGET}
+	${SYSTEM_LD} -L$S/../../../SVA/lib -lsva
 .if ${MK_CTF} != "no"
 	${CTFMERGE} ${CTFFLAGS} -o ${.TARGET} ${SYSTEM_OBJS} vers.o
 .endif
+# =======
+# 	@echo linking SVA ${.TARGET}
+# 	${SYSTEM_LD} -L$S/../../../SVA/lib -lsva
+# 	@${SYSTEM_CTFMERGE}
+# >>>>>>> theirs
 .if !defined(DEBUG)
 	${OBJCOPY} --strip-debug ${.TARGET}
 .endif

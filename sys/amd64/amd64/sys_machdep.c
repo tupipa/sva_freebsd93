@@ -287,6 +287,14 @@ sysarch(td, uap)
 				pcb->pcb_fsbase = a64base;
 				set_pcb_flags(pcb, PCB_FULL_IRET);
 				td->td_frame->tf_fs = _ufssel;
+
+				/* Setup fsbase in SVA. This is a hack since we should allow SVA
+				 * to control the initialization of FS segmentation (for TLS support).
+				 * For example, a better solution could be allow application/libc to 
+				 * invoke a hypercall to setup its fsbase.
+				 */
+				sva_init_fsbase(td->svaID, a64base);
+
 			} else
 				error = EINVAL;
 		}
@@ -343,6 +351,8 @@ amd64_set_ioperm(td, uap)
 		return (error);
 	if (uap->start + uap->length > IOPAGES * PAGE_SIZE * NBBY)
 		return (EINVAL);
+
+  panic ("SVA: No support for I/O Permissions!\n");
 
 	/*
 	 * XXX

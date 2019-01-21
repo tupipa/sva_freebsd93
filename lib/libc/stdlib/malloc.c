@@ -157,7 +157,10 @@
  * unnecessary, but we are burdened by history and the lack of resource limits
  * for anonymous mapped memory.
  */
+#if 0
+ /* SVA: No sbrk()! */
 #define	MALLOC_DSS
+#endif
 
 #include <sys/cdefs.h>
 __FBSDID("$FreeBSD: releng/9.3/lib/libc/stdlib/malloc.c 252699 2013-07-04 14:26:42Z des $");
@@ -206,6 +209,70 @@ __FBSDID("$FreeBSD: releng/9.3/lib/libc/stdlib/malloc.c 252699 2013-07-04 14:26:
 #include "ql.h"
 #endif
 
+#if 1
+/*
+ * Function: secmemalloc()
+ *
+ * Description:
+ *  Ask the SVA VM to allocate some ghost memory.
+ */
+static inline void *
+secmemalloc (uintptr_t size) {
+  void * ptr;
+  __asm__ __volatile__ ("int $0x7f\n" : "=a" (ptr) : "D" (size));
+  return ptr;
+}
+
+/* SVA: ghost sbrk() */
+void *
+ghost_sbrk (intptr_t incr) {
+  static uintptr_t totalAllocated = 0;
+  static uintptr_t currentSize = 0;
+  static uintptr_t start = 0xffffff0000000000u;
+  void * oldBrk = (void *)(start + currentSize);
+
+  if (getenv ("GHOSTING") == NULL)
+    return sbrk (incr);
+
+  //
+  // If this is the first time we've been called, allocate some ghost
+  // memory so that we have something with which to start.
+  //
+  if (!start) {
+    start = (uintptr_t) secmemalloc (0x400000);
+    totalAllocated = 0x400000;
+    currentSize = 0;
+  }
+
+  // Caller is asking to increase the allocation space
+  if (incr > 0) {
+    //
+    // If we have enough space remaining, simply increase the current size.
+    // Otherwise, go allocate more secure memory.
+    //
+    if ((totalAllocated - currentSize) >= incr) {
+      currentSize += incr;
+    } else {
+      secmemalloc (incr - (totalAllocated - currentSize));
+      currentSize += incr;
+    }
+  }
+
+  // Caller is asking to decrease the allocation space
+  if (incr < 0) {
+    currentSize += incr;
+  }
+
+  //
+  // Return the previous break value: note that an input increment of zero
+  // returns the current (unchanged) break value.
+  //
+  return oldBrk;
+}
+
+
+#endif
+
 #ifdef MALLOC_DEBUG
    /* Disable inlining to make debugging easier. */
 #  define inline
@@ -217,6 +284,10 @@ __FBSDID("$FreeBSD: releng/9.3/lib/libc/stdlib/malloc.c 252699 2013-07-04 14:26:
 /*
  * Minimum alignment of allocations is 2^LG_QUANTUM bytes.
  */
+
+/* SVA: No TLS support for now */
+// #define NO_TLS
+
 #ifdef __i386__
 #  define LG_QUANTUM		4
 #  define LG_SIZEOF_PTR		2
@@ -1596,7 +1667,7 @@ base_pages_alloc_dss(size_t minsize)
 
 		do {
 			/* Get the current end of the DSS. */
-			dss_max = sbrk(0);
+			dss_max = ghost_sbrk(0);
 
 			/*
 			 * Calculate how much padding is necessary to
@@ -1609,7 +1680,7 @@ base_pages_alloc_dss(size_t minsize)
 			if ((size_t)incr < minsize)
 				incr += csize;
 
-			dss_prev = sbrk(incr);
+			dss_prev = ghost_sbrk(incr);
 			if (dss_prev == dss_max) {
 				/* Success. */
 				dss_max = (void *)((intptr_t)dss_prev + incr);
@@ -1799,8 +1870,21 @@ pages_map(void *addr, size_t size)
 	 * We don't use MAP_FIXED here, because it can cause the *replacement*
 	 * of existing mappings, and we only want to create new mappings.
 	 */
-	ret = mmap(addr, size, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANON,
-	    -1, 0);
+  if (getenv ("GHOSTING")) {
+     /*
+      * SVA: Allocate secure ghost memory unless a virtual address is
+      * specified.  If that happens, refuse to allocate; the caller will
+      * think that the mmap() failed.
+      */
+    if (addr == NULL) {
+       __asm__ __volatile__ ("int $0x7f\n" : "=a" (ret) : "D" (size + 4096));
+    } else {
+      return NULL;
+    }
+  } else {
+    ret = mmap(addr, size, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANON,
+        -1, 0);
+  }
 	assert(ret != NULL);
 
 	if (ret == MAP_FAILED)
@@ -1809,15 +1893,16 @@ pages_map(void *addr, size_t size)
 		/*
 		 * We succeeded in mapping memory, but not in the right place.
 		 */
-		if (munmap(ret, size) == -1) {
-			char buf[STRERROR_BUF];
+    if (getenv ("GHOSTING") == NULL)
+      if (munmap(ret, size) == -1) {
+        char buf[STRERROR_BUF];
 
-			strerror_r(errno, buf, sizeof(buf));
-			_malloc_message(_getprogname(),
-			    ": (malloc) Error in munmap(): ", buf, "\n");
-			if (opt_abort)
-				abort();
-		}
+        strerror_r(errno, buf, sizeof(buf));
+        _malloc_message(_getprogname(),
+            ": (malloc) Error in munmap(): ", buf, "\n");
+        if (opt_abort)
+          abort();
+      }
 		ret = NULL;
 	}
 
@@ -1830,7 +1915,7 @@ static void
 pages_unmap(void *addr, size_t size)
 {
 
-	if (munmap(addr, size) == -1) {
+	if ((getenv ("GHOSTING") == NULL) && (munmap(addr, size) == -1)) {
 		char buf[STRERROR_BUF];
 
 		strerror_r(errno, buf, sizeof(buf));
@@ -1869,7 +1954,7 @@ chunk_alloc_dss(size_t size, bool *zero)
 		 */
 		do {
 			/* Get the current end of the DSS. */
-			dss_max = sbrk(0);
+			dss_max = ghost_sbrk(0);
 
 			/*
 			 * Calculate how much padding is necessary to
@@ -1884,7 +1969,7 @@ chunk_alloc_dss(size_t size, bool *zero)
 				incr += size;
 			}
 
-			dss_prev = sbrk(incr);
+			dss_prev = ghost_sbrk(incr);
 			if (dss_prev == dss_max) {
 				/* Success. */
 				dss_max = (void *)((intptr_t)dss_prev + incr);
@@ -2178,7 +2263,7 @@ chunk_dealloc_dss(void *chunk, size_t size)
 		}
 
 		/* Get the current end of the DSS. */
-		dss_max = sbrk(0);
+		dss_max = ghost_sbrk(0);
 
 		/*
 		 * Try to shrink the DSS if this chunk is at the end of the
@@ -2188,7 +2273,7 @@ chunk_dealloc_dss(void *chunk, size_t size)
 		 * designed multi-threaded programs.
 		 */
 		if ((void *)((uintptr_t)chunk + size) == dss_max
-		    && (dss_prev = sbrk(-(intptr_t)size)) == dss_max) {
+		    && (dss_prev = ghost_sbrk(-(intptr_t)size)) == dss_max) {
 			/* Success. */
 			dss_max = (void *)((intptr_t)dss_prev - (intptr_t)size);
 
@@ -5791,10 +5876,14 @@ MALLOC_OUT:
 	extent_tree_ad_new(&huge);
 #ifdef MALLOC_DSS
 	malloc_mutex_init(&dss_mtx);
-	dss_base = sbrk(0);
+// <<<<<<< HEAD
+	dss_base = ghost_sbrk(0);
 	i = (uintptr_t)dss_base & QUANTUM_MASK;
 	if (i != 0)
-		dss_base = sbrk(QUANTUM - i);
+		dss_base = ghost_sbrk(QUANTUM - i);
+// =======
+// 	dss_base = ghost_sbrk(0);
+// >>>>>>> tls_v2
 	dss_prev = dss_base;
 	dss_max = dss_base;
 	extent_tree_szad_new(&dss_chunks_szad);

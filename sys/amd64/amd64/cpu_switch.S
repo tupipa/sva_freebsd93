@@ -39,6 +39,8 @@
 #include "assym.s"
 #include "opt_sched.h"
 
+#include <sva/cfi.h>
+
 /*****************************************************************************/
 /* Scheduling                                                                */
 /*****************************************************************************/
@@ -235,7 +237,7 @@ done_load_dr:
 	movq	PCB_RBX(%r8),%rbx
 	movq	PCB_RIP(%r8),%rax
 	movq	%rax,(%rsp)
-	ret
+	RETQ
 
 	/*
 	 * We order these strangely for several reasons.
@@ -366,5 +368,5 @@ ENTRY(savectx)
 	str	PCB_TR(%rdi)
 
 	movl	$1,%eax
-	ret
+	RETQ
 END(savectx)

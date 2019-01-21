@@ -39,3 +39,4 @@ LFLAGS+= -d
 .endif
 
 .include <bsd.prog.mk>
+CC=gcc

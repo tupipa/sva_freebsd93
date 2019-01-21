@@ -65,6 +65,12 @@
 #include <sys/ucred.h>
 #include <machine/proc.h>		/* Machine-dependent proc substruct. */
 
+#if 1
+#ifdef _KERNEL
+#include <sva/state.h>
+#endif
+#endif
+
 /*
  * One structure allocated per session.
  *
@@ -312,11 +318,23 @@ struct thread {
 	struct vnet	*td_vnet;	/* (k) Effective vnet. */
 	const char	*td_vnet_lpush;	/* (k) Debugging vnet push / pop. */
 	struct trapframe *td_intr_frame;/* (k) Frame of the current irq */
+// <<<<<<< HEAD
 	struct proc	*td_rfppwait_p;	/* (k) The vforked child */
 	struct vm_page	**td_ma;	/* (k) uio pages held */
 	int		td_ma_cnt;	/* (k) size of *td_ma */
 	struct rl_q_entry *td_rlqe;	/* (k) Associated range lock entry. */
 	u_int		td_vp_reserv;	/* (k) Count of reserved vnodes. */
+// =======
+#if 1
+  /* The thread that swapped out so this thread could swap on */
+  struct thread * prev;
+  struct mtx * mtx;
+  uintptr_t svaID;   /* Thread ID for SVA Thread */
+  unsigned char sva; /* Flag whether SVA saved state on context switch */
+  void (*callout)(void *, struct trapframe *); /* Thread startup function */
+  void * callarg; /* Thread startup argument */
+#endif
+// >>>>>>> tls_v2
 };
 
 struct mtx *thread_lock_block(struct thread *);

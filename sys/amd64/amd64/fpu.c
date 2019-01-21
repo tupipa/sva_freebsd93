@@ -339,6 +339,7 @@ void
 fpuexit(struct thread *td)
 {
 
+#if 0
 	critical_enter();
 	if (curthread == PCPU_GET(fpcurthread)) {
 		stop_emulating();
@@ -347,6 +348,7 @@ fpuexit(struct thread *td)
 		PCPU_SET(fpcurthread, 0);
 	}
 	critical_exit();
+#endif
 }
 
 int
@@ -597,6 +599,11 @@ static int err_count = 0;
 void
 fpudna(void)
 {
+// <<<<<<< HEAD
+// =======
+#if 0
+	struct pcb *pcb;
+// >>>>>>> tls_v2
 
 	critical_enter();
 	if (PCPU_GET(fpcurthread) == curthread) {
@@ -644,6 +651,7 @@ fpudna(void)
 	} else
 		fpurestore(curpcb->pcb_save);
 	critical_exit();
+#endif
 }
 
 void
@@ -667,6 +675,7 @@ fpudrop()
 int
 fpugetregs(struct thread *td)
 {
+#if 0
 	struct pcb *pcb;
 	uint64_t *xstate_bv, bit;
 	char *sa;
@@ -688,6 +697,7 @@ fpugetregs(struct thread *td)
 	} else {
 		owned = _MC_FPOWNED_PCB;
 	}
+// <<<<<<< HEAD
 	critical_exit();
 	if (use_xsave) {
 		/*
@@ -709,6 +719,9 @@ fpugetregs(struct thread *td)
 		}
 	}
 	return (owned);
+// =======
+#endif
+// >>>>>>> tls_v2
 }
 
 void
@@ -769,6 +782,7 @@ int
 fpusetregs(struct thread *td, struct savefpu *addr, char *xfpustate,
     size_t xfpustate_size)
 {
+#if 0
 	struct pcb *pcb;
 	int error;
 
@@ -792,7 +806,11 @@ fpusetregs(struct thread *td, struct savefpu *addr, char *xfpustate,
 		bcopy(addr, get_pcb_user_save_td(td), sizeof(*addr));
 		fpuuserinited(td);
 	}
+// <<<<<<< HEAD
 	return (0);
+=======
+#endif
+// >>>>>>> tls_v2
 }
 
 /*

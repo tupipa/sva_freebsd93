@@ -61,7 +61,19 @@ __FBSDID("$FreeBSD: releng/9.3/sys/kern/subr_pcpu.c 249132 2013-04-05 08:22:11Z 
 #include <sys/sx.h>
 #include <ddb/ddb.h>
 
+#if 1
+#include <sva/interrupt.h>
+#endif
+
+// <<<<<<< HEAD
 static MALLOC_DEFINE(M_PCPU, "Per-cpu", "Per-cpu resource accouting.");
+// =======
+// #if 1
+// #include <sva/interrupt.h>
+// #endif
+
+// MALLOC_DEFINE(M_PCPU, "Per-cpu", "Per-cpu resource accouting.");
+// >>>>>>> tls_v2
 
 struct dpcpu_free {
 	uintptr_t	df_start;
@@ -82,7 +94,6 @@ struct cpuhead cpuhead = STAILQ_HEAD_INITIALIZER(cpuhead);
 void
 pcpu_init(struct pcpu *pcpu, int cpuid, size_t size)
 {
-
 	bzero(pcpu, size);
 	KASSERT(cpuid >= 0 && cpuid < MAXCPU,
 	    ("pcpu_init: invalid cpuid %d", cpuid));

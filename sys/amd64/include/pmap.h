@@ -115,7 +115,7 @@
 
 /* Initial number of kernel page tables. */
 #ifndef NKPT
-#define	NKPT		32
+#define	NKPT		256	
 #endif
 
 #define NKPML4E		1		/* number of kernel PML4 slots */
@@ -200,7 +200,39 @@ pt_entry_t *vtopte(vm_offset_t);
 } while (0)
 #define	pte_clear(ptep)			pte_store(ptep, 0)
 
+// <<<<<<< HEAD
 #define	pde_store(pdep, pde)		pte_store(pdep, pde)
+// =======
+// 	r = *ptep;
+// 	return (r);
+// }
+
+// static __inline pt_entry_t
+// pte_load_store(pt_entry_t *ptep, pt_entry_t pte)
+// {
+// 	pt_entry_t r;
+
+// 	__asm __volatile(
+// 	    "xchgq %0,%1"
+// 	    : "=m" (*ptep),
+// 	      "=r" (r)
+// 	    : "1" (pte),
+// 	      "m" (*ptep));
+// 	return (r);
+// }
+
+// #define	pte_load_clear(pte)	atomic_readandclear_long(pte)
+
+// static __inline void
+// pte_store(pt_entry_t *ptep, pt_entry_t pte)
+// {
+//     *ptep = pte;
+// }
+
+// #define	pte_clear(ptep)		pte_store((ptep), (pt_entry_t)0ULL)
+
+// #define	pde_store(pdep, pde)	pte_store((pdep), (pde))
+// >>>>>>> tls_v2
 
 extern pt_entry_t pg_nx;
 
