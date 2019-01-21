@@ -1,0 +1,8 @@
+/* $FreeBSD: releng/9.3/lib/clang/include/llvm/Config/Disassemblers.def 263764 2014-03-26 07:35:24Z dim $ */
+
+LLVM_DISASSEMBLER(ARM)
+LLVM_DISASSEMBLER(Mips)
+LLVM_DISASSEMBLER(Sparc)
+LLVM_DISASSEMBLER(X86)
+
+#undef LLVM_DISASSEMBLER

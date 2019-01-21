@@ -1,0 +1,2 @@
+/* $FreeBSD: releng/9.3/lib/libc++/libc++.ldscript 258060 2013-11-12 18:43:35Z dim $ */
+GROUP ( @@SHLIB@@ @@LIBDIR@@/libcxxrt.so )

@@ -1,0 +1,24 @@
+# $FreeBSD: releng/9.3/tools/regression/bin/sh/expansion/export2.0 264423 2014-04-13 21:49:44Z jilles $
+
+w='@ @'
+check() {
+	[ "$v" = "$w" ] || echo "Expected $w got $v"
+}
+
+export v=$w
+check
+
+HOME=/known/value
+check() {
+	[ "$v" = ~ ] || echo "Expected $HOME got $v"
+}
+
+export v=~
+check
+
+check() {
+	[ "$v" = "x:$HOME" ] || echo "Expected x:$HOME got $v"
+}
+
+export v=x:~
+check

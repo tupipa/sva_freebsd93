@@ -1,0 +1,28 @@
+# $FreeBSD: releng/9.3/etc/ftpusers 256102 2013-10-07 08:19:41Z des $
+#
+# list of users disallowed any ftp access.
+# read by ftpd(8).
+root
+toor
+daemon
+operator
+bin
+tty
+kmem
+games
+news
+man
+sshd
+smmsp
+mailnull
+bind
+unbound
+proxy
+_pflogd
+_dhcp
+uucp
+pop
+auditdistd
+www
+hast
+nobody
