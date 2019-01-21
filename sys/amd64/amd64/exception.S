@@ -901,15 +901,10 @@ es_load_fault:
 	.globl	fs_load_fault
 fs_load_fault:
     STARTFUNC
-/* <<<<<<< HEAD */
 	testl	$PSL_I,TF_RFLAGS(%rsp)
 	jz	1f
 	sti
 1:
-/* =======
-	STARTFUNC
-//>>>>>>> tls_v2
-*/
 	movl	$T_PROTFLT,TF_TRAPNO(%rsp)
 	movq	%rsp,%rdi
 	call	trap

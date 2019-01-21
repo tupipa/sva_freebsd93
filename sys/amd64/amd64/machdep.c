@@ -379,15 +379,10 @@ sendsig(sig_t catcher, ksiginfo_t *ksi, sigset_t *mask)
 	/* Allocate space for the signal handler context. */
 	if ((td->td_pflags & TDP_ALTSTACK) != 0 && !oonstack &&
 	    SIGISMEMBER(psp->ps_sigonstack, sig)) {
-// <<<<<<< HEAD
 		sp = td->td_sigstk.ss_sp + td->td_sigstk.ss_size;
-// =======
 #if 1
     panic ("SVA: signal altstacks not supported!\n");
 #endif
-// 		sp = td->td_sigstk.ss_sp +
-// 		    td->td_sigstk.ss_size - sizeof(struct sigframe);
-// >>>>>>> tls_v2
 #if defined(COMPAT_43)
 		td->td_sigstk.ss_flags |= SS_ONSTACK;
 #endif
@@ -1008,12 +1003,8 @@ exec_setregs(struct thread *td, struct image_params *imgp, u_long stack)
 #if 0
 	pcb->pcb_fsbase = 0;
 	pcb->pcb_gsbase = 0;
-// <<<<<<< HEAD
 	clear_pcb_flags(pcb, PCB_32BIT);
-// =======
-// 	clear_pcb_flags(pcb, PCB_32BIT | PCB_GS32BIT);
 #endif
-// >>>>>>> tls_v2
 	pcb->pcb_initial_fpucw = __INITIAL_FPUCW__;
 #if 0
 	set_pcb_flags(pcb, PCB_FULL_IRET);

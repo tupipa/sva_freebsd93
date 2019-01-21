@@ -318,13 +318,11 @@ struct thread {
 	struct vnet	*td_vnet;	/* (k) Effective vnet. */
 	const char	*td_vnet_lpush;	/* (k) Debugging vnet push / pop. */
 	struct trapframe *td_intr_frame;/* (k) Frame of the current irq */
-// <<<<<<< HEAD
 	struct proc	*td_rfppwait_p;	/* (k) The vforked child */
 	struct vm_page	**td_ma;	/* (k) uio pages held */
 	int		td_ma_cnt;	/* (k) size of *td_ma */
 	struct rl_q_entry *td_rlqe;	/* (k) Associated range lock entry. */
 	u_int		td_vp_reserv;	/* (k) Count of reserved vnodes. */
-// =======
 #if 1
   /* The thread that swapped out so this thread could swap on */
   struct thread * prev;
@@ -334,7 +332,7 @@ struct thread {
   void (*callout)(void *, struct trapframe *); /* Thread startup function */
   void * callarg; /* Thread startup argument */
 #endif
-// >>>>>>> tls_v2
+
 };
 
 struct mtx *thread_lock_block(struct thread *);

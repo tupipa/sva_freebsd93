@@ -312,17 +312,7 @@ IDTVEC(cpususpend)
 	RETTARGET
 	movq	lapic, %rax
 	movl	$0, LA_EOI(%rax)	/* End Of Interrupt to APIC */
-/* <<<<<<< HEAD */
 	jmp	doreti
-/* =======
-
-	call	cpususpend_handler
-	RETTARGET
-
-	POP_FRAME
-	jmp	doreti_iret
-//>>>>>>> tls_v2
-*/
 
 /*
  * Executed by a CPU when it receives a RENDEZVOUS IPI from another CPU.

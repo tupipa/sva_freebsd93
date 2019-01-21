@@ -1682,12 +1682,8 @@ sched_throw(struct thread *td)
 	}
 	mtx_assert(&sched_lock, MA_OWNED);
 	KASSERT(curthread->td_md.md_spinlock_count == 1, ("invalid count"));
-// <<<<<<< HEAD
-// =======
-// 	PCPU_SET(switchtime, cpu_ticks());
-// 	PCPU_SET(switchticks, ticks);
+
 #if 0
-// >>>>>>> tls_v2
 	cpu_throw(td, choosethread());	/* doesn't return */
 #else
   cpu_throw_sva (td, choosethread(), td->td_lock);

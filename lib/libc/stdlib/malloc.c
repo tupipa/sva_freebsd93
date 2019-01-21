@@ -5876,14 +5876,10 @@ MALLOC_OUT:
 	extent_tree_ad_new(&huge);
 #ifdef MALLOC_DSS
 	malloc_mutex_init(&dss_mtx);
-// <<<<<<< HEAD
 	dss_base = ghost_sbrk(0);
 	i = (uintptr_t)dss_base & QUANTUM_MASK;
 	if (i != 0)
 		dss_base = ghost_sbrk(QUANTUM - i);
-// =======
-// 	dss_base = ghost_sbrk(0);
-// >>>>>>> tls_v2
 	dss_prev = dss_base;
 	dss_max = dss_base;
 	extent_tree_szad_new(&dss_chunks_szad);

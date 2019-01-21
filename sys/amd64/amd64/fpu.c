@@ -599,11 +599,9 @@ static int err_count = 0;
 void
 fpudna(void)
 {
-// <<<<<<< HEAD
-// =======
+
 #if 0
 	struct pcb *pcb;
-// >>>>>>> tls_v2
 
 	critical_enter();
 	if (PCPU_GET(fpcurthread) == curthread) {
@@ -697,7 +695,6 @@ fpugetregs(struct thread *td)
 	} else {
 		owned = _MC_FPOWNED_PCB;
 	}
-// <<<<<<< HEAD
 	critical_exit();
 	if (use_xsave) {
 		/*
@@ -719,9 +716,7 @@ fpugetregs(struct thread *td)
 		}
 	}
 	return (owned);
-// =======
 #endif
-// >>>>>>> tls_v2
 }
 
 void
@@ -806,11 +801,8 @@ fpusetregs(struct thread *td, struct savefpu *addr, char *xfpustate,
 		bcopy(addr, get_pcb_user_save_td(td), sizeof(*addr));
 		fpuuserinited(td);
 	}
-// <<<<<<< HEAD
 	return (0);
-=======
 #endif
-// >>>>>>> tls_v2
 }
 
 /*

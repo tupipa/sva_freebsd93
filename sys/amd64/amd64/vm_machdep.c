@@ -94,7 +94,6 @@ static u_int	cpu_reset_proxyid;
 static volatile u_int	cpu_reset_proxy_active;
 #endif
 
-// <<<<<<< HEAD
 CTASSERT((struct thread **)OFFSETOF_CURTHREAD ==
     &((struct pcpu *)NULL)->pc_curthread);
 CTASSERT((struct pcb **)OFFSETOF_CURPCB == &((struct pcpu *)NULL)->pc_curpcb);
@@ -143,7 +142,7 @@ alloc_fpusave(int flags)
 	}
 	return (res);
 }
-// =======
+
 #if 1
 void
 kernel_thread_trampoline (struct thread * td)
@@ -159,7 +158,6 @@ kernel_thread_trampoline (struct thread * td)
   return;
 }
 #endif
-// >>>>>>> tls_v2
 
 /*
  * Finish a fork operation, with process p2 nearly set up.
@@ -473,15 +471,14 @@ cpu_set_syscall_retval(struct thread *td, int error)
 #if 0
 		td->td_frame->tf_rip -= td->td_frame->tf_err;
 		td->td_frame->tf_r10 = td->td_frame->tf_rcx;
-// <<<<<<< HEAD
 		set_pcb_flags(td->td_pcb, PCB_FULL_IRET);
-// =======
-    sva_icontext_restart(td->td_frame->tf_r10, td->td_frame->tf_rip);
+
+		sva_icontext_restart(td->td_frame->tf_r10, td->td_frame->tf_rip);
 #else
 	set_pcb_flags(td->td_pcb, PCB_FULL_IRET); // added for 9.3 kernel
     sva_icontext_restart(0, 0);
 #endif
-// >>>>>>> tls_v2
+
 		break;
 
 	case EJUSTRETURN:
@@ -770,9 +767,6 @@ cpu_set_user_tls(struct thread *td, void *tls_base)
 	}
 #endif
 	pcb->pcb_fsbase = (register_t)tls_base;
-// <<<<<<< HEAD
-// =======
-// 	set_pcb_flags(pcb, PCB_FULL_IRET);
 
 	if (td->svaID){
 		sva_init_fsbase(td->svaID, tls_base); // never reached here yet.
@@ -781,7 +775,6 @@ cpu_set_user_tls(struct thread *td, void *tls_base)
 			td->td_proc->p_comm, td->td_proc->p_pid, td->td_tid);
 	}
 
-// >>>>>>> tls_v2
 	return (0);
 }
 

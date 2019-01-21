@@ -65,15 +65,7 @@ __FBSDID("$FreeBSD: releng/9.3/sys/kern/subr_pcpu.c 249132 2013-04-05 08:22:11Z 
 #include <sva/interrupt.h>
 #endif
 
-// <<<<<<< HEAD
 static MALLOC_DEFINE(M_PCPU, "Per-cpu", "Per-cpu resource accouting.");
-// =======
-// #if 1
-// #include <sva/interrupt.h>
-// #endif
-
-// MALLOC_DEFINE(M_PCPU, "Per-cpu", "Per-cpu resource accouting.");
-// >>>>>>> tls_v2
 
 struct dpcpu_free {
 	uintptr_t	df_start;

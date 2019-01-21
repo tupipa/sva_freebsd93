@@ -245,11 +245,9 @@ lapic_init(vm_paddr_t addr)
 	KASSERT(trunc_page(addr) == addr,
 	    ("local APIC not aligned on a page boundary"));
 	lapic_paddr = addr;
-// <<<<<<< HEAD
 	lapic = pmap_mapdev(addr, sizeof(lapic_t));
-// =======
+
 #if 0
-// >>>>>>> tls_v2
 	setidt(APIC_SPURIOUS_INT, IDTVEC(spuriousint), SDT_APIC, SEL_KPL,
 	    GSEL_APIC);
 #else

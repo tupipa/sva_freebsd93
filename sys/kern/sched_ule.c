@@ -80,15 +80,9 @@ dtrace_vtime_switch_func_t	dtrace_vtime_switch_func;
 #if 1
 #include "sva/state.h"
 #endif
-// <<<<<<< HEAD
-#if defined(__powerpc__) && defined(E500)
-// =======
-// #if 1
-// #include "sva/state.h"
-// #endif
 
-// #if defined(__sparc64__)
-// >>>>>>> tls_v2
+#if defined(__powerpc__) && defined(E500)
+
 #error "This architecture is not currently compatible with ULE"
 #endif
 
@@ -2665,12 +2659,9 @@ sched_throw(struct thread *td)
 	KASSERT(curthread->td_md.md_spinlock_count == 1, ("invalid count"));
 	newtd = choosethread();
 	TDQ_LOCKPTR(tdq)->mtx_lock = (uintptr_t)newtd;
-// <<<<<<< HEAD
-// =======
-// 	PCPU_SET(switchtime, cpu_ticks());
-// 	PCPU_SET(switchticks, ticks);
+
 #if 0
-// >>>>>>> tls_v2
+
 	cpu_throw(td, newtd);		/* doesn't return */
 #else
 	cpu_throw_sva(td, newtd, td->td_lock);		/* doesn't return */

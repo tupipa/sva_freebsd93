@@ -740,33 +740,11 @@ pmap_bootstrap(vm_paddr_t *firstaddr)
 
 	/* XXX do %cr0 as well */
 	load_cr4(rcr4() | CR4_PGE | CR4_PSE);
-// <<<<<<< HEAD
 #ifndef SVA_MMU
 	load_cr3(KPML4phys);
 #endif 
 	if (cpu_stdext_feature & CPUID_STDEXT_SMEP)
 		load_cr4(rcr4() | CR4_SMEP);
-	
-// =======
-
-// #ifdef SVA_MMU
-// #if 0
-//   /* 
-//    * Set the static address locations in the struct here to aid in kernel MMU
-//    * initialization. Note that we pass in the page mapping for the pml4 page.
-//    * This function will also initialize the cr3.
-//    */
-//   sva_mmu_init (&((pdp_entry_t *)KPML4phys)[PML4PML4I],
-//                 NPDEPG,
-//                 firstaddr,
-//                 (uintptr_t)btext,
-//                 (uintptr_t)etext); 
-
-// #endif
-// #else /* !SVA_MMU */
-//     load_cr3(KPML4phys);
-// #endif
-// >>>>>>> tls_v2
 
 	/*
 	 * Initialize the kernel pmap (which is statically allocated).
@@ -2645,41 +2623,7 @@ reclaim_pv_chunk(pmap_t locked_pmap, struct rwlock **lockp)
 				TAILQ_INSERT_TAIL(&new_tail, pc, pc_lru);
 				mtx_lock(&pv_chunks_mutex);
 				continue;
-// <<<<<<< HEAD
 			}
-// =======
-// 			pmap_resident_count_dec(pmap, 1);
-// 			pde = pmap_pde(pmap, va);
-// 			KASSERT((*pde & PG_PS) == 0, ("pmap_collect: found"
-// 			    " a 2mpage in page %p's pv list", m));
-// 			pte = pmap_pde_to_pte(pde, va);
-
-// #ifdef SVA_MMU
-// 			/* 
-// 			 * To emulate the proper behavior here we first read the pte value then
-// 			 * do an update mapping to remove the mapping. Pass in a value of zero
-// 			 * to remove the mapping.
-// 			 */
-// 			tpte = *pte;
-// 			sva_remove_mapping(pte);
-// #else
-// 			tpte = pte_load_clear(pte);
-// #endif
-// 			KASSERT((tpte & PG_W) == 0,
-// 			    ("pmap_collect: wired pte %#lx", tpte));
-// 			if (tpte & PG_A)
-// 				vm_page_aflag_set(m, PGA_REFERENCED);
-// 			if ((tpte & (PG_M | PG_RW)) == (PG_M | PG_RW))
-// 				vm_page_dirty(m);
-// 			free = NULL;
-// 			pmap_unuse_pt(pmap, va, *pde, &free);
-// 			pmap_invalidate_page(pmap, va);
-// 			pmap_free_zero_pages(free);
-// 			TAILQ_REMOVE(&m->md.pv_list, pv, pv_list);
-// 			free_pv_entry(pmap, pv);
-// 			if (pmap != locked_pmap)
-// 				PMAP_UNLOCK(pmap);
-// >>>>>>> tls_v2
 		}
 
 		/*
@@ -4059,11 +4003,8 @@ pmap_enter(pmap_t pmap, vm_offset_t va, vm_prot_t access, vm_page_t m,
 	pv_entry_t pv;
 	vm_paddr_t opa, pa;
 	vm_page_t mpte, om;
-// <<<<<<< HEAD
-// =======
 // 	boolean_t invlva; // from old 9.0 kernel, not in 9.3 kernel, not used by sva
     boolean_t newMapping; // added by sva, but not used....
-// >>>>>>> tls_v2
 
 	va = trunc_page(va);
 	KASSERT(va <= VM_MAX_KERNEL_ADDRESS, ("pmap_enter: toobig"));
@@ -4374,12 +4315,8 @@ pmap_enter_object(pmap_t pmap, vm_offset_t start, vm_offset_t end,
 		if ((va & PDRMASK) == 0 && va + NBPDR <= end &&
 		    (VM_PAGE_TO_PHYS(m) & PDRMASK) == 0 &&
 		    pg_ps_enabled && vm_reserv_level_iffullpop(m) == 0 &&
-// <<<<<<< HEAD
 		    pmap_enter_pde(pmap, va, m, prot, &lock))
-// =======
-// 		    pmap_enter_pde(pmap, va, m, prot))
         {
-// >>>>>>> tls_v2
 			m = &m[NBPDR / PAGE_SIZE - 1];
 #ifdef SVA_MMU
             printf("\n\n Got a 2mb page!!");
@@ -4784,15 +4721,11 @@ pmap_copy(pmap_t dst_pmap, pmap_t src_pmap, vm_offset_t dst_addr, vm_size_t len,
 			pde = &pde[pmap_pde_index(addr)];
 			if (*pde == 0 && ((srcptepaddr & PG_MANAGED) == 0 ||
 			    pmap_pv_insert_pde(dst_pmap, addr, srcptepaddr &
-// <<<<<<< HEAD
 			    PG_PS_FRAME, &lock))) {
-// =======
-// 			    PG_PS_FRAME))) {
 #ifdef SVA_MMU
 				/* Update the pde to include the new mapping */
 				sva_update_l2_mapping(pde, srcptepaddr & ~PG_W);
 #else
-// >>>>>>> tls_v2
 				*pde = srcptepaddr & ~PG_W;
 #endif
 				pmap_resident_count_inc(dst_pmap, NBPDR / PAGE_SIZE);

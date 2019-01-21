@@ -612,22 +612,7 @@ trap(struct trapframe *frame)
 			if (kdb_trap(type, 0, frame))
 				goto out;
 #endif
-// // <<<<<<< HEAD
-// static int panic_on_nmi = 1;
-// SYSCTL_INT(_machdep, OID_AUTO, panic_on_nmi, CTLFLAG_RW,
-// 	&panic_on_nmi, 0, "Panic on NMI");
-// TUNABLE_INT("machdep.panic_on_nmi", &panic_on_nmi);
-// static int prot_fault_translation;
-// SYSCTL_INT(_machdep, OID_AUTO, prot_fault_translation, CTLFLAG_RW,
-//     &prot_fault_translation, 0,
-//     "Select signal to deliver on protection fault");
-// static int uprintf_signal;
-// SYSCTL_INT(_machdep, OID_AUTO, uprintf_signal, CTLFLAG_RW,
-//     &uprintf_signal, 0,
-//     "Print debugging information on trap signal to ctty");
-// =======
 			break;
-// >>>>>>> tls_v2
 
 #ifdef DEV_ISA
 		case T_NMI:
@@ -1904,7 +1889,6 @@ sva_syscall(struct thread *td, int traced)
  * problems with this merge bug.
  * 
  * /
-// <<<<<<< HEAD
 	/*
 	 * If the user-supplied value of %rip is not a canonical
 	 * address, then some CPUs will trigger a ring 0 #GP during
@@ -1916,14 +1900,12 @@ sva_syscall(struct thread *td, int traced)
 	if (td->td_frame->tf_rip >= VM_MAXUSER_ADDRESS)
 		set_pcb_flags(td->td_pcb, PCB_FULL_IRET);
 		// TODO: here sva full iret should check on this?
-		
-// =======
+
 #if 1
   /* SVA: The SVA assembly code does not run the AST */
   if (curthread->td_flags & (TDF_ASTPENDING | TDF_NEEDRESCHED))
     ast (&localframe);
 #endif
-// >>>>>>> tls_v2
 }
 #endif
 
