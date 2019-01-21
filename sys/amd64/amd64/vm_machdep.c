@@ -291,8 +291,11 @@ cpu_fork(td1, p2, td2, flags)
 #if 1
 	/*
 	 * Compute the length of the stack.
+	 * 
+	 * changed when porting from FreeBSD 9.0 to 9.3
 	 */
 	uintptr_t stacklen = td2->td_kstack_pages * PAGE_SIZE -
+	                     cpu_max_ext_state_size  -
 	                     sizeof (struct pcb) -
 	                     sizeof (struct trapframe);
 
@@ -568,6 +571,7 @@ cpu_set_upcall(struct thread *td, struct thread *td0)
    * SVA: Initialize the new thread state.
    */
   uintptr_t stacklen = td->td_kstack_pages * PAGE_SIZE -
+	                     cpu_max_ext_state_size  -
 	                     sizeof (struct pcb) -
 	                     sizeof (struct trapframe);
   td->sva = 1;
@@ -613,9 +617,16 @@ cpu_create_upcall(struct thread *td,
 	 * values here.
 	 */
 	bcopy(td0->td_pcb, pcb2, sizeof(*pcb2));
-	clear_pcb_flags(pcb2, PCB_FPUINITDONE | PCB_USERFPUINITDONE);
-	pcb2->pcb_save = &pcb2->pcb_user_save;
+	/* this is not patched by merge since it is a new function added by sva
+	 * This function is rewrite of the cpu_set_upcall
+	*/
+	clear_pcb_flags(pcb2, PCB_FPUINITDONE | PCB_USERFPUINITDONE |
+	    PCB_KERNFPU);
+	pcb2->pcb_save = get_pcb_user_save_pcb(pcb2);
+	bcopy(get_pcb_user_save_td(td0), pcb2->pcb_save,
+	    cpu_max_ext_state_size);
 	set_pcb_flags(pcb2, PCB_FULL_IRET);
+
 
 	/*
 	 * Create a new fresh stack for the new thread.
@@ -656,6 +667,7 @@ cpu_create_upcall(struct thread *td,
    * SVA: Initialize the new thread state.
    */
   uintptr_t stacklen = td->td_kstack_pages * PAGE_SIZE -
+	                     cpu_max_ext_state_size  -
 	                     sizeof (struct pcb) -
 	                     sizeof (struct trapframe);
   td->sva = 1;

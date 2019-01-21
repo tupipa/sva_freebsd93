@@ -741,9 +741,12 @@ pmap_bootstrap(vm_paddr_t *firstaddr)
 	/* XXX do %cr0 as well */
 	load_cr4(rcr4() | CR4_PGE | CR4_PSE);
 // <<<<<<< HEAD
+#ifndef SVA_MMU
 	load_cr3(KPML4phys);
+#endif 
 	if (cpu_stdext_feature & CPUID_STDEXT_SMEP)
 		load_cr4(rcr4() | CR4_SMEP);
+	
 // =======
 
 // #ifdef SVA_MMU
@@ -4058,8 +4061,8 @@ pmap_enter(pmap_t pmap, vm_offset_t va, vm_prot_t access, vm_page_t m,
 	vm_page_t mpte, om;
 // <<<<<<< HEAD
 // =======
-// 	boolean_t invlva; // from old 9.0 kernel, not used by sva
-    boolean_t newMapping; // added by sva
+// 	boolean_t invlva; // from old 9.0 kernel, not in 9.3 kernel, not used by sva
+    boolean_t newMapping; // added by sva, but not used....
 // >>>>>>> tls_v2
 
 	va = trunc_page(va);
@@ -4121,10 +4124,6 @@ retry:
 		panic("pmap_enter: invalid page directory va=%#lx", va);
 
 	origpte = *pte;
-
-#ifdef SVA_MMU
-	newMapping = pa == opa;
-#endif
 
 	/*
 	 * Is the specified virtual address already mapped?
@@ -4193,46 +4192,21 @@ retry:
 	/*
 	 * Update the PTE.
 	 */
-// <<<<<<< HEAD
 	if ((origpte & PG_V) != 0) {
 validate:
-
+        /* SVA TODO Figure out what the heck this does */
 #if 0
-		origpte = pte_load_store(pte, newpte);
+    	origpte = pte_load_store(pte, newpte);
 #else
-      	origpte = *pte;
+        origpte = *pte;
 		sva_update_l1_mapping(pte, newpte);
 #endif
-		opa = origpte & PG_FRAME;
+        opa = origpte & PG_FRAME;
 		if (opa != pa) {
 			if ((origpte & PG_MANAGED) != 0) {
 				om = PHYS_TO_VM_PAGE(opa);
 				if ((origpte & (PG_M | PG_RW)) == (PG_M |
 				    PG_RW))
-// =======
-// 	if ((origpte & ~(PG_M|PG_A)) != newpte) {
-// 		newpte |= PG_A;
-// 		if ((access & VM_PROT_WRITE) != 0)
-// 			newpte |= PG_M;
-// 		if (origpte & PG_V) {
-// 			invlva = FALSE;
-//             /* SVA TODO Figure out what the heck this does */
-// #if 0
-// 			origpte = pte_load_store(pte, newpte);
-// #else
-//       origpte = *pte;
-// 			sva_update_l1_mapping(pte, newpte);
-// #endif
-// 			if (origpte & PG_A) {
-// 				if (origpte & PG_MANAGED)
-// 					vm_page_aflag_set(om, PGA_REFERENCED);
-// 				if (opa != VM_PAGE_TO_PHYS(m) || ((origpte &
-// 				    PG_NX) == 0 && (newpte & PG_NX)))
-// 					invlva = TRUE;
-// 			}
-// 			if ((origpte & (PG_M | PG_RW)) == (PG_M | PG_RW)) {
-// 				if ((origpte & PG_MANAGED) != 0)
-// >>>>>>> tls_v2
 					vm_page_dirty(om);
 				if ((origpte & PG_A) != 0)
 					vm_page_aflag_set(om, PGA_REFERENCED);
@@ -4244,7 +4218,6 @@ validate:
 				    TAILQ_EMPTY(&pa_to_pvh(opa)->pv_list)))
 					vm_page_aflag_clear(om, PGA_WRITEABLE);
 			}
-// <<<<<<< HEAD
 		} else if ((newpte & PG_M) == 0 && (origpte & (PG_M |
 		    PG_RW)) == (PG_M | PG_RW)) {
 			if ((origpte & PG_MANAGED) != 0)
@@ -4264,7 +4237,6 @@ validate:
 		if ((origpte & PG_A) != 0)
 			pmap_invalidate_page(pmap, va);
 	} else{
-
 #ifdef SVA_MMU
 			/* Insert new l1 mapping */
 		sva_update_l1_mapping(pte, newpte);
@@ -4274,23 +4246,6 @@ validate:
 	}
 
 unchanged:
-// =======
-// 			if ((origpte & PG_MANAGED) != 0 &&
-// 			    TAILQ_EMPTY(&om->md.pv_list) &&
-// 			    TAILQ_EMPTY(&pa_to_pvh(opa)->pv_list))
-// 				vm_page_aflag_clear(om, PGA_WRITEABLE);
-// 			if (invlva)
-// 				pmap_invalidate_page(pmap, va);
-// 		} else {
-// #ifdef SVA_MMU
-// 			/* Insert new l1 mapping */
-// 			sva_update_l1_mapping(pte, newpte);
-// #else
-// 			pte_store(pte, newpte);
-// #endif
-//         }
-// 	}
-// >>>>>>> tls_v2
 
 	/*
 	 * If both the page table page and the reservation are fully

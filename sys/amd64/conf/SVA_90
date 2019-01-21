@@ -16,32 +16,31 @@
 # If you are in doubt as to the purpose or necessity of a line, check first
 # in NOTES.
 #
-# $FreeBSD: releng/9.3/sys/amd64/conf/GENERIC 265729 2014-05-09 03:52:10Z ken $
+# $FreeBSD: release/9.0.0/sys/amd64/conf/GENERIC 227305 2011-11-07 13:40:54Z marius $
 
 cpu		HAMMER
 ident		GENERIC
 
-#makeoptions	DEBUG=-gdwarf-2		# Build kernel with gdb(1) debug symbols
-#makeoptions	WITH_CTF=1		# Run ctfconvert(1) for DTrace support
+#makeoptions	DEBUG=-g		# Build kernel with gdb(1) debug symbols
 
 #******************
 # SVA Related Flags
 #******************
 options     SVA_MMU
 
+#options 	VERBOSE_SYSINIT
+
 options 	SCHED_ULE		# ULE scheduler
-#options    SCHED_4BSD
+#options   SCHED_4BSD
 options 	PREEMPTION		# Enable kernel thread preemption
 options 	INET			# InterNETworking
 options 	INET6			# IPv6 communications protocols
-options 	TCP_OFFLOAD		# TCP offload
 options 	SCTP			# Stream Control Transmission Protocol
 options 	FFS			# Berkeley Fast Filesystem
 options 	SOFTUPDATES		# Enable FFS soft updates support
 options 	UFS_ACL			# Support for access control lists
 options 	UFS_DIRHASH		# Improve performance on big directories
 options 	UFS_GJOURNAL		# Enable gjournal-based UFS journaling
-options 	QUOTA			# Enable disk quotas for UFS
 options 	MD_ROOT			# MD is a potential root device
 options 	NFSCL			# New Network Filesystem Client
 options 	NFSD			# New Network Filesystem Server
@@ -52,7 +51,6 @@ options 	CD9660			# ISO 9660 Filesystem
 options 	PROCFS			# Process filesystem (requires PSEUDOFS)
 options 	PSEUDOFS		# Pseudo-filesystem framework
 options 	GEOM_PART_GPT		# GUID Partition Tables.
-options 	GEOM_RAID		# Soft RAID functionality.
 options 	GEOM_LABEL		# Provides labelization
 options 	COMPAT_FREEBSD32	# Compatible with i386 binaries
 options 	COMPAT_FREEBSD4		# Compatible with FreeBSD4
@@ -79,7 +77,11 @@ options 	KDB			# Kernel debugger related code
 options		DDB
 options		BREAK_TO_DEBUGGER # Break signal on console goes into debugger
 options		ALT_BREAK_TO_DEBUGGER # Break signal on console goes into debugger
-#options 	DDB_CTF			# kernel ELF linker loads CTF data
+
+# JTC: lock debugging stuff
+#options WITNESS
+#options WITNESS_KDB
+#options WITNESS_SKIPSPIN
 
 # Make an SMP-capable kernel by default
 #options 	SMP			# Symmetric MultiProcessor Kernel
@@ -115,7 +117,6 @@ device		isp		# Qlogic family
 #device		ispfw		# Firmware for QLogic HBAs- normally a module
 device		mpt		# LSI-Logic MPT-Fusion
 device		mps		# LSI-Logic MPT-Fusion 2
-device		mpr		# LSI-Logic MPT-Fusion 3
 #device		ncr		# NCR/Symbios Logic
 device		sym		# NCR/Symbios Logic (newer chipsets + those of `ncr')
 device		trm		# Tekram DC395U/UW/F DC315U adapters
@@ -124,7 +125,6 @@ device		adv		# Advansys SCSI adapters
 device		adw		# Advansys wide SCSI adapters
 device		aic		# Adaptec 15[012]x SCSI adapters, AIC-6[23]60.
 device		bt		# Buslogic/Mylex MultiMaster SCSI adapters
-device		isci		# Intel C600 SAS controller
 
 # ATA/SCSI peripherals
 device		scbus		# SCSI bus (required for ATA/SCSI)
@@ -133,8 +133,7 @@ device		da		# Direct Access (disks)
 device		sa		# Sequential Access (tape etc)
 device		cd		# CD
 device		pass		# Passthrough device (direct ATA/SCSI access)
-device		ses		# Enclosure Services (SES and SAF-TE)
-#device		ctl		# CAM Target Layer
+device		ses		# SCSI Environmental Services (and SAF-TE)
 
 # RAID controllers interfaced to the SCSI subsystem
 #device		amr		# AMI MegaRAID
@@ -144,25 +143,22 @@ device		ses		# Enclosure Services (SES and SAF-TE)
 #device		ciss		# Compaq Smart RAID 5*
 #device		dpt		# DPT Smartcache III, IV - See NOTES for options
 #device		hptmv		# Highpoint RocketRAID 182x
-#device		hptnr		# Highpoint DC7280, R750
 #device		hptrr		# Highpoint RocketRAID 17xx, 22xx, 23xx, 25xx
-#device		hpt27xx		# Highpoint RocketRAID 27xx
 #device		iir		# Intel Integrated RAID
 #device		ips		# IBM (Adaptec) ServeRAID
 #device		mly		# Mylex AcceleRAID/eXtremeRAID
 #device		twa		# 3ware 9000 series PATA/SATA RAID
-#device		tws		# LSI 3ware 9750 SATA+SAS 6Gb/s RAID controller
 
 # RAID controllers
 #device		aac		# Adaptec FSA RAID
 #device		aacp		# SCSI passthrough for aac (requires CAM)
-#device		aacraid		# Adaptec by PMC RAID
 #device		ida		# Compaq Smart RAID
 #device		mfi		# LSI MegaRAID SAS
 #device		mlx		# Mylex DAC960 family
 #XXX pointer/int warnings
 #device		pst		# Promise Supertrak SX6000
 #device		twe		# 3ware ATA RAID
+#device		tws		# LSI 3ware 9750 SATA+SAS 6Gb/s RAID controller
 
 # atkbdc0 controls both the keyboard and the PS/2 mouse
 device		atkbdc		# AT keyboard controller
@@ -172,7 +168,6 @@ device		psm		# PS/2 mouse
 device		kbdmux		# keyboard multiplexer
 
 device		vga		# VGA video card driver
-options 	VESA		# Add support for VESA BIOS Extensions (VBE)
 
 device		splash		# Splash screen and screen saver support
 
@@ -202,7 +197,7 @@ device		uart		# Generic UART driver
 device		puc		# Multi I/O cards and multi-channel UARTs
 
 # PCI Ethernet NICs.
-device		bxe		# Broadcom NetXtreme II BCM5771X/BCM578XX 10GbE
+device		bxe		# Broadcom BCM57710/BCM57711/BCM57711E 10Gb Ethernet
 device		de		# DEC/Intel DC21x4x (``Tulip'')
 device		em		# Intel PRO/1000 Gigabit Ethernet Family
 device		igb		# Intel PRO/1000 PCIE Server Gigabit Family
@@ -222,12 +217,9 @@ device		vx		# 3Com 3c590, 3c595 (``Vortex'')
 #device		bce		# Broadcom BCM5706/BCM5708 Gigabit Ethernet
 #device		bfe		# Broadcom BCM440x 10/100 Ethernet
 #device		bge		# Broadcom BCM570xx Gigabit Ethernet
-#device		cas		# Sun Cassini/Cassini+ and NS DP83065 Saturn
 #device		dc		# DEC/Intel 21143 and various workalikes
 #device		et		# Agere ET1310 10/100/Gigabit Ethernet
 #device		fxp		# Intel EtherExpress PRO/100B (82557, 82558)
-#device		gem		# Sun GEM/Sun ERI/Apple GMAC
-#device		hme		# Sun HME (Happy Meal Ethernet)
 #device		jme		# JMicron JMC250 Gigabit/JMC260 Fast Ethernet
 #device		lge		# Level 1 LXT1001 gigabit Ethernet
 #device		msk		# Marvell/SysKonnect Yukon II Gigabit Ethernet
@@ -270,7 +262,7 @@ device		ed		# NE[12]000, SMC Ultra, 3c503, DS8390 cards
 #device		wlan_tkip	# 802.11 TKIP support
 #device		wlan_amrr	# AMRR transmit rate control algorithm
 #device		an		# Aironet 4500/4800 802.11 wireless NICs.
-#device		ath		# Atheros NICs
+#device		ath		# Atheros NIC's
 #device		ath_pci		# Atheros pci/cardbus glue
 #device		ath_hal		# pci/cardbus chip support
 #options 	AH_SUPPORT_AR5416	# enable AR5416 tx/rx descriptors
@@ -289,8 +281,6 @@ device		ed		# NE[12]000, SMC Ultra, 3c503, DS8390 cards
 # Pseudo devices.
 device		loop		# Network loopback
 device		random		# Entropy device
-options 	PADLOCK_RNG	# VIA Padlock RNG
-options 	RDRAND_RNG	# Intel Bull Mountain RNG
 device		ether		# Ethernet support
 device		vlan		# 802.1Q VLAN support
 device		tun		# Packet tunnel.
@@ -346,21 +336,19 @@ device		ums		# Mouse
 #device		urtw		# Realtek RTL8187B/L wireless NICs
 #device		zyd		# ZyDAS zd1211/zd1211b wireless NICs
 
+# FireWire support
+#device		firewire	# FireWire bus code
+# sbp(4) works for some systems but causes boot failure on others
+#device		sbp		# SCSI over FireWire (Requires scbus and da)
+#device		fwe		# Ethernet over FireWire (non-standard!)
+#device		fwip		# IP over FireWire (RFC 2734,3146)
+#device		dcons		# Dumb console driver
+#device		dcons_crom	# Configuration ROM for dcons
+
 # Sound support
 #device		sound		# Generic sound driver (required)
-#device		snd_cmi		# CMedia CMI8338/CMI8738
-#device		snd_csa		# Crystal Semiconductor CS461x/428x
-#device		snd_emu10kx	# Creative SoundBlaster Live! and Audigy
 #device		snd_es137x	# Ensoniq AudioPCI ES137x
 #device		snd_hda		# Intel High Definition Audio
 #device		snd_ich		# Intel, NVidia and other ICH AC'97 Audio
 #device		snd_uaudio	# USB Audio
 #device		snd_via8233	# VIA VT8233x Audio
-
-# VirtIO support
-device		virtio		# Generic VirtIO bus (required)
-device		virtio_pci	# VirtIO PCI Interface
-device		vtnet		# VirtIO Ethernet device
-device		virtio_blk	# VirtIO Block device
-device		virtio_scsi	# VirtIO SCSI device
-device		virtio_balloon	# VirtIO Memory Balloon device

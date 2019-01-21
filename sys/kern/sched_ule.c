@@ -77,15 +77,18 @@ dtrace_vtime_switch_func_t	dtrace_vtime_switch_func;
 #include <machine/cpu.h>
 #include <machine/smp.h>
 
-<<<<<<< HEAD
-#if defined(__powerpc__) && defined(E500)
-=======
 #if 1
 #include "sva/state.h"
 #endif
+// <<<<<<< HEAD
+#if defined(__powerpc__) && defined(E500)
+// =======
+// #if 1
+// #include "sva/state.h"
+// #endif
 
-#if defined(__sparc64__)
->>>>>>> tls_v2
+// #if defined(__sparc64__)
+// >>>>>>> tls_v2
 #error "This architecture is not currently compatible with ULE"
 #endif
 

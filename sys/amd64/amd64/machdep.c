@@ -2050,6 +2050,9 @@ hammer_time(u_int64_t modulep, u_int64_t physfree)
 	wrmsr(MSR_STAR, msr);
 	wrmsr(MSR_SF_MASK, PSL_NT|PSL_T|PSL_I|PSL_C|PSL_D);
 
+	printf("**********************\n");
+	printf("* offset of sva pcpu state: 0x%lx\n", __offsetof(struct pcpu, svaIContext));
+	printf("**********************\n");
 	getmemsize(kmdp, physfree);
 	init_param2(physmem);
     
