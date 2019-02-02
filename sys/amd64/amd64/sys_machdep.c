@@ -288,12 +288,13 @@ sysarch(td, uap)
 				set_pcb_flags(pcb, PCB_FULL_IRET);
 				td->td_frame->tf_fs = _ufssel;
 
-				/* Setup fsbase in SVA. This is a hack since we should allow SVA
-				 * to control the initialization of FS segmentation (for TLS support).
-				 * For example, a better solution could be allow application/libc to 
-				 * invoke a hypercall to setup its fsbase.
+				/*
+				 * Setup fsbase in SVA. This is a hack since we should allow 
+				 * SVA to control the initialization of FS segmentation (for
+				 * TLS support). For example, a better solution could be allow
+				 * application/libc to invoke a hypercall to setup its fsbase.
 				 */
-				sva_init_fsbase(td->svaID, a64base);
+				sva_init_fsbase(a64base);
 
 			} else
 				error = EINVAL;

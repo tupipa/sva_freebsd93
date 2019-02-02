@@ -2476,12 +2476,19 @@ set_mcontext(struct thread *td, const mcontext_t *mcp)
 	}
 	if (mcp->mc_flags & _MC_HASBASES) {
 		pcb->pcb_fsbase = mcp->mc_fsbase;
+		
+		/* 
+		* update fsbase in SVA
+		*
+		* Note: during the tests, we have never reached here yet, but when we
+		* ever reached here, we need the fsbase updated with the new value.
+		*/
+		sva_init_fsbase(pcb->pcb_fsbase);
+
 		pcb->pcb_gsbase = mcp->mc_gsbase;
 	}
 	set_pcb_flags(pcb, PCB_FULL_IRET);
 
-	/* update fsbase in SVA */
-	sva_init_fsbase(td->svaID, pcb->pcb_fsbase); // never reached here yet.
 	return (0);
 }
 

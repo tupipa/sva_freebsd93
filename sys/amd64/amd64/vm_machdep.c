@@ -310,11 +310,6 @@ cpu_fork(td1, p2, td2, flags)
 	                             0,
                                0);
 
-  /* Update fsbase in SVA -- TLS support */
-  if (pcb2->pcb_fsbase != 0){
-	sva_init_fsbase(td2->svaID, pcb2->pcb_fsbase);
-  }
-
 #endif
 	/*
 	 * Now, cpu_switch() can schedule the new process.
@@ -581,11 +576,6 @@ cpu_set_upcall(struct thread *td, struct thread *td0)
                               0,
 	                            0);
 
-  /* Update fsbase in SVA -- TLS support */
-  if (pcb2->pcb_fsbase != 0){
-	sva_init_fsbase(td->svaID, pcb2->pcb_fsbase);
-  }
-
 #endif
 }
 
@@ -677,11 +667,6 @@ cpu_create_upcall(struct thread *td,
                               0,
 	                            0);
 
-  /* Update fsbase in SVA -- TLS support */
-  if (pcb2->pcb_fsbase != 0){
-	sva_init_fsbase(td->svaID, pcb2->pcb_fsbase);
-  }
-
 #endif
 }
 #endif
@@ -768,12 +753,11 @@ cpu_set_user_tls(struct thread *td, void *tls_base)
 #endif
 	pcb->pcb_fsbase = (register_t)tls_base;
 
-	if (td->svaID){
-		sva_init_fsbase(td->svaID, tls_base); // never reached here yet.
-	}else{
-		panic("%s[%d:%d] has no svaID, cannot init fsbase for thread\n", 
-			td->td_proc->p_comm, td->td_proc->p_pid, td->td_tid);
-	}
+	/* 
+	 * SVA: during the tests, we have never reached here yet, but when we ever
+	 * reached here, we need the fsbase updated with the new value 
+	 */
+	sva_init_fsbase(tls_base);
 
 	return (0);
 }
