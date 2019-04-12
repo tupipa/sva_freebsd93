@@ -757,6 +757,10 @@ cpu_set_user_tls(struct thread *td, void *tls_base)
 	 * SVA: during the tests, we have never reached here yet, but when we ever
 	 * reached here, we need the fsbase updated with the new value 
 	 */
+
+	if (td != curthread){
+		panic("td! = curthread, sva_init_fsbase might not work!");
+	}
 	sva_init_fsbase(tls_base);
 
 	return (0);

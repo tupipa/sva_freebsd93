@@ -294,6 +294,10 @@ sysarch(td, uap)
 				 * TLS support). For example, a better solution could be allow
 				 * application/libc to invoke a hypercall to setup its fsbase.
 				 */
+
+				if (td != curthread){
+					panic("td! = curthread, sva_init_fsbase might not work!");
+				}
 				sva_init_fsbase(a64base);
 
 			} else

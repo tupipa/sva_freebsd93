@@ -2483,6 +2483,9 @@ set_mcontext(struct thread *td, const mcontext_t *mcp)
 		* Note: during the tests, we have never reached here yet, but when we
 		* ever reached here, we need the fsbase updated with the new value.
 		*/
+		if (td != curthread){
+			panic("td! = curthread, sva_init_fsbase might not work!");
+		}
 		sva_init_fsbase(pcb->pcb_fsbase);
 
 		pcb->pcb_gsbase = mcp->mc_gsbase;
